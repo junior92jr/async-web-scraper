@@ -1,25 +1,21 @@
 import asyncio
 import signal
-import aiohttp
 import ssl
+
+import aiohttp
 import certifi
 
 from db.connection import get_pool
+from db.monitored_urls import get_monitored_urls, load_monitored_urls_from_file
 from db.schema import create_tables
-from db.monitored_urls import get_monitored_urls
-from db.monitored_urls import load_monitored_urls_from_file
 from monitor.checker import check_website
 from utils.logger import logger
-
 
 ssl_context = ssl.create_default_context(cafile=certifi.where())
 
 
-async def main():
-    """
-    Main entry point for the application.
-    """
-
+async def main() -> None:
+    """Run the main entry point for the application."""
     await create_tables()
 
     await load_monitored_urls_from_file(json_path="config.json")
@@ -34,7 +30,6 @@ async def main():
     async with aiohttp.ClientSession(
         connector=aiohttp.TCPConnector(ssl=ssl_context)
     ) as session:
-
         tasks = [
             asyncio.create_task(check_website(entry, session, pool))
             for entry in monitored_urls

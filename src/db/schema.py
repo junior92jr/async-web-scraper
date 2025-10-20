@@ -3,7 +3,8 @@ from utils.logger import logger
 
 
 async def create_tables() -> None:
-    """Create the necessary tables in the database if they do not exist,
+    """Create the necessary tables in the database if they do not exist.
+
     using a transaction to ensure atomic execution.
     """
     pool = await get_pool()

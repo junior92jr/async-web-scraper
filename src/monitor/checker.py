@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 import ssl
 import time
@@ -6,9 +7,12 @@ from datetime import UTC, datetime
 
 import aiohttp
 import certifi
-from db.monitored_urls import MonitoredURL
 from psycopg import AsyncConnection
+from psycopg.errors import DatabaseError
 from psycopg_pool import AsyncConnectionPool
+from pydantic import ValidationError
+
+from db.monitored_urls import MonitoredURL
 from utils.logger import logger
 
 ssl_context = ssl.create_default_context(cafile=certifi.where())
@@ -18,7 +22,7 @@ async def check_website(
     monitored_url: MonitoredURL,
     session: aiohttp.ClientSession,
     pool: AsyncConnectionPool[AsyncConnection[dict]],
-):
+) -> None:
     """Check a website at regular intervals and log the results to the database."""
     compiled_regex = re.compile(monitored_url.regex) if monitored_url.regex else None
 
@@ -55,11 +59,21 @@ async def check_website(
                         ),
                     )
 
-                logger.info(
-                    f"[{start_time}] {monitored_url.url} | Status: {status} | Match: {match} | Time: {response_time:.3f}s"
+                log_msg = (
+                    f"[{start_time}] {monitored_url.url} | "
+                    f"Status: {status} | Match: {match} | "
+                    f"Time: {response_time:.3f}s"
                 )
+                logger.info(log_msg)
 
-            except Exception as e:
+            except (
+                json.JSONDecodeError,
+                FileNotFoundError,
+                ValueError,
+                TypeError,
+                ValidationError,
+                DatabaseError,
+            ) as e:
                 logger.error(f"[{start_time}] Error checking {monitored_url.url}: {e}")
 
             elapsed = time.monotonic() - t0

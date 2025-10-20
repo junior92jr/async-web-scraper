@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  vscode:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        UV_VERSION: latest
+    command: "sleep infinity"
+    ports:
+      - "8000:8000"
+    user: vscode
+    volumes:
+      - ..:/workspace:cached
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

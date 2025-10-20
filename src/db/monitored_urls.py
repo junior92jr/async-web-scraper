@@ -1,9 +1,11 @@
 import json
+from pathlib import Path
 
-from db.connection import get_pool
 from psycopg.errors import DatabaseError
 from psycopg.rows import dict_row
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, ValidationError
+
+from db.connection import get_pool
 from utils.logger import logger
 
 
@@ -26,29 +28,29 @@ async def get_monitored_urls() -> list[MonitoredURL]:
             ).fetchall()
 
         monitored_urls = [MonitoredURL(**row) for row in rows]
-        logger.info(f"Loaded {len(monitored_urls)} monitored URL(s).")
-        return monitored_urls
-
     except DatabaseError as e:
         logger.error(f"Failed to fetch monitored URLs: {e}")
         return []
+    else:
+        logger.info(f"Loaded {len(monitored_urls)} monitored URL(s).")
+        return monitored_urls
 
 
 def _load_json_file(json_path: str) -> list[MonitoredURL]:
     """Load and validate JSON file into a list of MonitoredURL models."""
     try:
-        with open(json_path, encoding="utf-8") as f:
+        with Path(json_path).open(encoding="utf-8") as f:
             raw_data = json.load(f)
 
         if not isinstance(raw_data, list):
-            raise ValueError("JSON root must be a list.")
-
-        monitored_urls = [MonitoredURL(**entry) for entry in raw_data]
-        return monitored_urls
+            value_error_message = "JSON root must be a list."
+            raise TypeError(value_error_message)
 
     except (json.JSONDecodeError, FileNotFoundError, ValueError) as e:
         logger.error(f"Error loading JSON from {json_path}: {e}")
         raise
+    else:
+        return [MonitoredURL(**entry) for entry in raw_data]
 
 
 async def load_monitored_urls_from_file(json_path: str) -> None:
@@ -71,5 +73,12 @@ async def load_monitored_urls_from_file(json_path: str) -> None:
                 )
 
         logger.info("Monitored URLs successfully upserted.")
-    except Exception as e:
+    except (
+        json.JSONDecodeError,
+        FileNotFoundError,
+        ValueError,
+        TypeError,
+        ValidationError,
+        DatabaseError,
+    ) as e:
         logger.error(f"Failed to load monitored URLs from file: {e}")
