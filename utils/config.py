@@ -6,7 +6,6 @@ class Settings(BaseSettings):
     """Application configuration settings."""
 
     DATABASE_URL: PostgresDsn | None = None
-    DATABASE_URL_TEST: PostgresDsn | None = None
     MAX_POOL_SIZE: int = 10
     SCRAPER_TIMEOUT: float = 5.0
     LOG_LEVEL: str = "INFO"

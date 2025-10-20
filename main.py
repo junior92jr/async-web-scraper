@@ -1,20 +1,18 @@
 import asyncio
 import signal
+import aiohttp
+import ssl
+import certifi
 
 from db.connection import get_pool
 from db.schema import create_tables
 from db.monitored_urls import get_monitored_urls
 from db.monitored_urls import load_monitored_urls_from_file
 from monitor.checker import check_website
-from db.monitored_urls import MonitoredURL
 from utils.logger import logger
-import aiohttp
-import ssl
-import certifi
 
 
 ssl_context = ssl.create_default_context(cafile=certifi.where())
-
 
 
 async def main():
@@ -31,15 +29,6 @@ async def main():
     if not monitored_urls:
         logger.warning("No monitored URLs found. Exiting.")
         return
-
-    # monitored_urls = [
-    #     MonitoredURL(
-    #         url=item["url"],
-    #         interval=item["interval"],
-    #         regex=item.get("regex")
-    #     ) for item in raw_urls
-    #     if isinstance(item, dict) and "url" in item and "interval" in item
-    # ]
 
     pool = await get_pool()
     async with aiohttp.ClientSession(

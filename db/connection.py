@@ -7,14 +7,20 @@ settings = Settings()
 _pool: AsyncConnectionPool[AsyncConnection[dict]] | None = None
 
 
-async def get_pool() -> AsyncConnectionPool[AsyncConnection[dict]]:
-    """Get or create a global async connection pool."""
+async def get_pool(override_url: str | None = None) -> AsyncConnectionPool[AsyncConnection[dict]]:
+    """
+    Get or create a global async connection pool.
+
+    Parameters:
+        override_url: Optional database URL (used for tests with pytest-postgresql)
+    """
     global _pool
     if _pool is None:
-        if settings.DATABASE_URL is None:
-            raise ValueError("DATABASE_URL is not set in environment or .env file.")
+        db_url = override_url or settings.DATABASE_URL
+        if not db_url:
+            raise ValueError("Database URL is not set in environment or .env file.")
         _pool = AsyncConnectionPool[AsyncConnection[dict]](
-            conninfo=str(settings.DATABASE_URL),
+            conninfo=str(db_url),
             max_size=settings.MAX_POOL_SIZE,
             timeout=settings.SCRAPER_TIMEOUT,
         )
