@@ -1,42 +1,17 @@
-import pytest
-from db.connection import get_pool, close_pool
-from db.schema import create_tables
-from utils.config import Settings
+from collections.abc import AsyncGenerator
 
-settings = Settings()
+import pytest_asyncio
+from psycopg import AsyncConnection
+from psycopg_pool import AsyncConnectionPool
 
+from src.db.connection import get_pool
 
-@pytest.fixture
-def settings_fixture() -> Settings:
-    """Return app settings (no test DB needed)."""
-    return settings
+TEST_DB_URL = "postgresql://test_user:test_pass@test-db:5432/test_db"
 
 
-@pytest.fixture(scope="session")
-async def test_pool(postgresql_proc):
-    """
-    Create an async connection pool using pytest-postgresql's ephemeral DB.
-    Initializes the schema once per test session.
-    """
-    db_url = (
-        f"postgresql://{postgresql_proc.user}:"
-        f"{postgresql_proc.password}@"
-        f"{postgresql_proc.host}:{postgresql_proc.port}/"
-        f"{postgresql_proc.dbname}"
-    )
-
-    pool = await get_pool(override_url=db_url)
-    await create_tables()
-    yield pool
-    await close_pool()
-
-
-@pytest.fixture
-async def db_connection(test_pool):
-    """
-    Provide a database connection inside a rollback transaction.
-    Ensures DB is pristine after each test.
-    """
-    async with test_pool.connection() as conn:
-        async with conn.transaction():
-            yield conn
+@pytest_asyncio.fixture
+async def db_pool() -> AsyncGenerator[AsyncConnectionPool[AsyncConnection[dict]]]:
+    """Provide a database connection pool for testing."""
+    pool = await get_pool(override_url=TEST_DB_URL)
+    async with pool:
+        yield pool

@@ -17,13 +17,15 @@ dependencies = [
     "ipython>=9.6.0",
     "pyright>=1.1.406",
     "pytest-cov>=7.0.0",
+    "pytest-asyncio>=1.2.0",
+    "asyncpg>=0.30.0",
 ]
 
 [dependency-groups]
 dev = ["ruff>=0.14.0"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/async_web_scraper"]
+packages = ["src"]
 
 [build-system]
 requires = ["hatchling"]
