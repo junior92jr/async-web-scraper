@@ -1,13 +1,16 @@
+from psycopg_pool import AsyncConnectionPool
+
 from db.connection import get_pool
 from utils.logger import logger
 
 
-async def create_tables() -> None:
+async def create_tables(pool: AsyncConnectionPool | None = None) -> None:
     """Create the necessary tables in the database if they do not exist.
 
     using a transaction to ensure atomic execution.
     """
-    pool = await get_pool()
+    if pool is None:
+        pool = await get_pool()
     async with pool.connection() as conn, conn.transaction(), conn.cursor() as cur:
         logger.info("Ensuring tables exist...")
         await cur.execute("""

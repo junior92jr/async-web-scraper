@@ -22,10 +22,9 @@ async def get_monitored_urls() -> list[MonitoredURL]:
     pool = await get_pool()
     try:
         async with pool.connection() as conn:
-            conn.row_factory = dict_row
-            rows = await (
-                await conn.execute("SELECT url, interval, regex FROM monitored_urls")
-            ).fetchall()
+            async with conn.cursor(row_factory=dict_row) as cur:
+                await cur.execute("SELECT url, interval, regex FROM monitored_urls")
+                rows = await cur.fetchall()
 
         monitored_urls = [MonitoredURL(**row) for row in rows]
     except DatabaseError as e:
